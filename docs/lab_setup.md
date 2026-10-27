@@ -1,7 +1,7 @@
 # Member 2 — Lab Setup & Log Acquisition
 
 ## Status
-Draft — repository sources identified; individual EVTX files have NOT yet been downloaded, parsed, or validated in this workspace. Do not describe the datasets as fully validated until the checks in this document are completed.
+Draft — one local EVTX file has passed a basic Hayabusa log-metrics readability check. Its original upstream revision, full event-level validity, and redistribution permission remain unverified. Other files are not validated.
 
 ## Project purpose
 Prepare authorized Windows Event Log (`.evtx`) input for the Hayabusa Windows Threat Hunting System. Hayabusa findings will later be normalized and reviewed; a finding or ATT&CK mapping is not, by itself, proof that a host was compromised.
@@ -10,14 +10,14 @@ Prepare authorized Windows Event Log (`.evtx`) input for the Hayabusa Windows Th
 
 ### Dataset 1 — Hayabusa Sample EVTX
 - Repository: https://github.com/Yamato-Security/hayabusa-sample-evtx
-- Download ZIP: https://github.com/Yamato-Security/hayabusa-sample-evtx/archive/refs/heads/main.zip
+- Download ZIP: https://github.com/Yamato-Security/hayabusa-sample-evtx/archive/0845333ecb4afcf64c55c6e10946383f168f308c.zip
 - Purpose stated by upstream: sample EVTX files for testing Hayabusa detection rules.
 - Source notes: upstream README says the collection includes samples from DeepBlueCLI, EVTX-ATTACK-SAMPLES, EVTX-to-MITRE-Attack, and files created by Yamato Security.
 - Caution: mixed upstream provenance; record the actual subfolder and original source for each selected file.
 
 ### Dataset 2 — EVTX-ATTACK-SAMPLES
 - Repository: https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES
-- Download ZIP: https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES/archive/refs/heads/master.zip
+- Download ZIP: https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES/archive/4ceed2f4706daf601c212a8f91c113dd85349a2c.zip
 - Purpose stated by upstream: Windows event samples associated with attack/post-exploitation techniques; ATT&CK mapping is at technique level, not procedure level.
 - License shown by upstream: GPL-3.0. Review license obligations and project/institution requirements before redistributing files.
 - Caution: attack-focused collection; it is not a complete balanced benign/malicious benchmark by itself.
@@ -47,7 +47,7 @@ The repository may contain documentation and inventory metadata, but do not comm
 For each selected `.evtx` file:
 1. Record exact filename, source repository, upstream subfolder, and source/license notes.
 2. Preserve the original file; copy it to a working folder before analysis.
-3. Record file size and calculate a SHA-256 hash for provenance.
+3. Record file size and SHA-256 as evidence of byte-level integrity. A hash does not establish source authenticity, file safety, or redistribution rights. Record the pinned source revision and acquisition evidence separately.
 4. Confirm it is readable by an approved EVTX parser/Hayabusa version; record errors instead of silently dropping files.
 5. Extract the earliest and latest event timestamps using a suitable parser or Hayabusa output. Record timezone assumptions separately; do not infer the source timezone solely from a filename.
 6. Record channel/log type and host label only when actually available. Use privacy-safe host labels.
@@ -61,10 +61,19 @@ Provide the exact local input directory, selected filenames, inventory CSV, time
 
 ## Current validation status
 - Repository descriptions reviewed: YES.
-- ZIP archives downloaded and extracted in this workspace: NO.
-- Individual EVTX files parsed: NO.
+- A local ZIP containing the selected file is present; its original upstream repository/revision has NOT been independently verified.
+- One individual EVTX file processed by Hayabusa v4.2.0 log-metrics; 18 events reported. Full event-level validation: NO.
 - File-level timestamp coverage verified: NO.
 - Benign/malicious labels validated: NO.
 - Redistribution permissions assessed for every file: NO.
 
 These are explicit gaps, not completed checks.
+
+
+## Immutable source references
+Current upstream HEAD revisions checked on 2026-10-27; these are pinned references for reproducible future acquisition, not proof of the revision used for the existing local ZIP.
+
+- Hayabusa Sample EVTX: `0845333ecb4afcf64c55c6e10946383f168f308c`
+- EVTX-ATTACK-SAMPLES: `4ceed2f4706daf601c212a8f91c113dd85349a2c`
+
+For every selected file, record the actual acquisition revision and evidence. If the original revision cannot be established, record it as unknown; do not infer it from the current HEAD.
