@@ -1,0 +1,17 @@
+# Ignore EVTX event logs and raw datasets
+*.evtx
+data/*
+!data/sample/
+!data/README.md
+
+# Python / virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
