@@ -1,0 +1,4 @@
+TimeCreated,EventID,Channel,Computer,SourceImage,TargetImage,GrantedAccess,CallTrace,ProcessId,SourceProcessId
+2026-10-01T01:03:15Z,10,Microsoft-Windows-Sysmon/Operational,WORKSTATION-A,C:\Python39\python.exe,C:\Windows\System32\lsass.exe,0x1010,C:\Windows\SYSTEM32\ntdll.dll|C:\Windows\System32\KERNELBASE.dll|UNKNOWN(00007FF6B4C30000),0x1A4,0x3D8
+2026-10-01T01:04:00Z,10,Microsoft-Windows-Sysmon/Operational,WORKSTATION-A,C:\Windows\System32\svchost.exe,C:\Windows\System32\lsass.exe,0x400,C:\Windows\SYSTEM32\ntdll.dll|C:\Windows\System32\KERNELBASE.dll,0x1B0,0x1C4
+2026-10-01T03:00:00Z,10,Microsoft-Windows-Sysmon/Operational,WORKSTATION-A,C:\Windows\System32\MsMpEng.exe,C:\Windows\System32\lsass.exe,0x1410,C:\Windows\SYSTEM32\ntdll.dll|C:\Windows\System32\KERNELBASE.dll,0x600,0x710

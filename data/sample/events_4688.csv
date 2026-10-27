@@ -1,0 +1,11 @@
+TimeCreated,EventID,Channel,Computer,SubjectUserName,SubjectLogonId,NewProcessId,NewProcessName,CommandLine,ParentProcessName,MandatoryLabel
+2026-10-01T00:03:11Z,4688,Security,WORKSTATION-A,SYSTEM,0x3e7,0x1A4,C:\Windows\System32\svchost.exe,-k netsvcs -p -s Themes,C:\Windows\System32\services.exe,System Mandatory Level
+2026-10-01T00:14:22Z,4688,Security,WORKSTATION-A,user01,0x4a2f1c,0x2B8,C:\Windows\System32\cmd.exe,cmd.exe,C:\Windows\explorer.exe,Medium Mandatory Level
+2026-10-01T01:02:47Z,4688,Security,WORKSTATION-A,user01,0x4a2f1c,0x3C4,C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe,powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0AA==,C:\Windows\System32\cmd.exe,Medium Mandatory Level
+2026-10-01T01:03:01Z,4688,Security,WORKSTATION-A,user01,0x4a2f1c,0x3D8,C:\Python39\python.exe,python.exe exploit.py,C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe,Medium Mandatory Level
+2026-10-01T01:45:00Z,4688,Security,WORKSTATION-A,user01,0x4a2f1c,0x4A0,C:\Windows\System32\cmd.exe,cmd.exe /c whoami,C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe,Medium Mandatory Level
+2026-10-01T01:45:05Z,4688,Security,WORKSTATION-A,user01,0x4a2f1c,0x4B2,C:\Windows\System32\whoami.exe,whoami,C:\Windows\System32\cmd.exe,Medium Mandatory Level
+2026-10-01T02:00:13Z,4688,Security,WORKSTATION-A,user01,0x4a2f1c,0x5C0,C:\Windows\System32\net.exe,net user administrator Password123 /add,C:\Windows\System32\cmd.exe,Medium Mandatory Level
+2026-10-01T02:01:00Z,4688,Security,WORKSTATION-A,SYSTEM,0x3e7,0x600,C:\Windows\System32\svchost.exe,-k LocalSystemNetworkRestricted -p -s WinDefend,C:\Windows\System32\services.exe,System Mandatory Level
+2026-10-01T03:15:22Z,4688,Security,WORKSTATION-A,user01,0x4a2f1c,0x720,C:\Windows\System32\schtasks.exe,schtasks /create /tn Updater /tr C:\Users\user01\AppData\Local\Temp\update.bat /sc onlogon /ru System,C:\Windows\System32\cmd.exe,Medium Mandatory Level
+2026-10-01T06:00:00Z,4688,Security,WORKSTATION-A,SYSTEM,0x3e7,0x850,C:\Windows\System32\WindowsUpdateClient.exe,/RunHandlerComServer,C:\Windows\System32\svchost.exe,System Mandatory Level

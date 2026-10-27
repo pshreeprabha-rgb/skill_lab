@@ -1,0 +1,9 @@
+# Windows Threat Hunting System - Python dependencies
+# All standard library except these optional packages
+# Run: pip install -r requirements.txt
+
+# Core data processing (all should already be available)
+# csv, json, os, sys, pathlib - standard library
+
+# Optional: for enhanced CSV processing
+# (not required - script works with stdlib only)

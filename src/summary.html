@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hayabusa Threat Hunting Dashboard | WORKSTATION-A</title>
+  <meta name="description" content="Windows Threat Hunting results using Hayabusa and MITRE ATT&CK — WORKSTATION-A investigation summary." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-card: #0f1628;
+      --bg-card-hover: #151e35;
+      --bg-border: #1d2744;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --text-primary: #e8edf5;
+      --text-secondary: #94a3b8;
+      --text-muted: #4b5980;
+      --severity-critical: #ef4444;
+      --severity-high: #f97316;
+      --severity-medium: #f59e0b;
+      --severity-low: #6366f1;
+      --severity-info: #64748b;
+      --tactic-exec: #8b5cf6;
+      --tactic-cred: #ef4444;
+      --tactic-persist: #f59e0b;
+      --tactic-evade: #06b6d4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ─────────────── HEADER ─────────────── */
+    header {
+      background: linear-gradient(135deg, #0d1626 0%, #0f2044 50%, #0d1626 100%);
+      border-bottom: 1px solid var(--bg-border);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hayabusa-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .header-title h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .header-title p {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-danger { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-info   { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-warn   { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-ok     { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+
+    /* ─────────────── LAYOUT ─────────────── */
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    /* ─────────────── STAT CARDS ─────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-blue);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .stat-card.red::before   { background: linear-gradient(90deg, #ef4444, transparent); }
+    .stat-card.orange::before { background: linear-gradient(90deg, #f97316, transparent); }
+    .stat-card.blue::before  { background: linear-gradient(90deg, #3b82f6, transparent); }
+    .stat-card.green::before { background: linear-gradient(90deg, #10b981, transparent); }
+    .stat-card.purple::before { background: linear-gradient(90deg, #8b5cf6, transparent); }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .stat-value.red    { color: #ef4444; }
+    .stat-value.orange { color: #f97316; }
+    .stat-value.blue   { color: #3b82f6; }
+    .stat-value.green  { color: #10b981; }
+    .stat-value.purple { color: #8b5cf6; }
+
+    .stat-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ─────────────── SECTION HEADERS ─────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 32px 0 16px;
+    }
+
+    .section-header h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .section-header .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .icon-blue   { background: rgba(59,130,246,0.15); }
+    .icon-red    { background: rgba(239,68,68,0.15); }
+    .icon-yellow { background: rgba(245,158,11,0.15); }
+    .icon-purple { background: rgba(139,92,246,0.15); }
+    .icon-green  { background: rgba(16,185,129,0.15); }
+
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: var(--bg-border);
+    }
+
+    /* ─────────────── FINDINGS CARDS ─────────────── */
+    .findings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .finding-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+
+    .finding-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(59,130,246,0.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .finding-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--bg-border);
+    }
+
+    .finding-id-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(59,130,246,0.1);
+      color: #3b82f6;
+      border: 1px solid rgba(59,130,246,0.2);
+      white-space: nowrap;
+    }
+
+    .finding-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      flex: 1;
+      line-height: 1.4;
+    }
+
+    .finding-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .tag-high     { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.25); }
+    .tag-medium   { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+    .tag-low      { background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.25); }
+    .tag-validated { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+    .tag-candidate { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+    .tag-conf-high { background: rgba(16,185,129,0.1);  color: #10b981; }
+    .tag-conf-med  { background: rgba(245,158,11,0.1);  color: #f59e0b; }
+
+    .finding-body {
+      padding: 16px 20px;
+    }
+
+    .finding-meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .meta-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+
+    .meta-value {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .finding-interpretation {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 12px;
+      border-left: 2px solid var(--accent-blue);
+      padding-left: 12px;
+    }
+
+    .finding-detail-row {
+      margin-bottom: 8px;
+    }
+
+    .detail-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .detail-value {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .detail-value.warn { color: #f59e0b; }
+    .detail-value.green { color: #10b981; }
+
+    .evidence-box {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--bg-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent-cyan);
+      word-break: break-all;
+      margin-top: 8px;
+    }
+
+    /* ─────────────── ATTACK MAPPING ─────────────── */
+    .attack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .attack-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .attack-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(139,92,246,0.4);
+    }
+
+    .attack-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .technique-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .tactic-exec    { background: rgba(139,92,246,0.15); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.25); }
+    .tactic-cred    { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+    .tactic-persist { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+    .tactic-evade   { background: rgba(6,182,212,0.15);  color: #06b6d4; border: 1px solid rgba(6,182,212,0.25); }
+
+    .attack-card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .attack-card-tactic {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .attack-card-rationale {
+      font-size: 0.77rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      border-top: 1px solid var(--bg-border);
+      padding-top: 10px;
+    }
+
+    /* ─────────────── TIMELINE ─────────────── */
+    .timeline {
+      position: relative;
+      padding-left: 32px;
+      margin-bottom: 32px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--accent-blue), var(--accent-cyan), var(--accent-purple));
+      border-radius: 1px;
+    }
+
+    .timeline-event {
+      position: relative;
+      margin-bottom: 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--bg-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .timeline-event:hover {
+      border-color: rgba(59,130,246,0.3);
+      transform: translateX(2px);
+    }
+
+    .timeline-event::before {
+      content: '';
+      position: absolute;
+      left: -28px;
+      top: 18px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-blue);
+      background: var(--bg-primary);
+    }
+
+    .timeline-event.has-finding::before {
+      background: var(--accent-blue);
+      box-shadow: 0 0 8px rgba(59,130,246,0.5);
+    }
+
+    .timeline-event.benign::before {
+      border-color: var(--text-muted);
+      background: var(--bg-primary);
+    }
+
+    .timeline-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .timeline-ts {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent-cyan);
+    }
+
+    .timeline-host {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .timeline-summary {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .timeline-ref {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ─────────────── LIMITATIONS ─────────────── */
+    .limitations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .limitation-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-border);
+      border-left: 3px solid var(--accent-yellow);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+
+    .limitation-card h4 {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--accent-yellow);
+      margin-bottom: 6px;
+    }
+
+    .limitation-card p {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* ─────────────── FOOTER ─────────────── */
+    footer {
+      border-top: 1px solid var(--bg-border);
+      margin-top: 48px;
+      padding: 24px 32px;
+      text-align: center;
+    }
+
+    footer p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ─────────────── DISCLOSURE BANNER ─────────────── */
+    .disclosure-banner {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .disclosure-banner .icon { font-size: 16px; margin-top: 2px; }
+
+    .disclosure-banner p {
+      font-size: 0.8rem;
+      color: #b58a2e;
+      line-height: 1.5;
+    }
+
+    .disclosure-banner strong { color: #f59e0b; }
+
+    /* ─────────────── ANIMATIONS ─────────────── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .stat-card, .finding-card, .attack-card, .timeline-event {
+      animation: fadeInUp 0.4s ease both;
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.05s; }
+    .stat-card:nth-child(2) { animation-delay: 0.10s; }
+    .stat-card:nth-child(3) { animation-delay: 0.15s; }
+    .stat-card:nth-child(4) { animation-delay: 0.20s; }
+    .stat-card:nth-child(5) { animation-delay: 0.25s; }
+
+    /* ─────────────── RESPONSIVE ─────────────── */
+    @media (max-width: 768px) {
+      .header-inner { padding: 14px 16px; }
+      main { padding: 16px; }
+      .findings-grid { grid-template-columns: 1fr; }
+      .attack-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════ HEADER ═══════ -->
+<header>
+  <div class="header-inner">
+    <div class="header-logo">
+      <div class="hayabusa-icon">🦅</div>
+      <div class="header-title">
+        <h1>Hayabusa Threat Hunting Dashboard</h1>
+        <p>WORKSTATION-A · 2026-10-01 UTC · Hayabusa v2.18.0</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="badge badge-warn">Sample Dataset</span>
+      <span class="badge badge-danger">4 Findings</span>
+      <span class="badge badge-info">MITRE ATT&CK Mapped</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════ MAIN ═══════ -->
+<main>
+
+  <!-- Disclosure Banner -->
+  <div class="disclosure-banner" id="disclosure">
+    <div class="icon">⚠️</div>
+    <p>
+      <strong>Sample Investigation Notice:</strong>
+      This dashboard was produced using <strong>publicly available, anonymized Windows Event Log sample data</strong>
+      (EVTX-ATTACK-SAMPLES repository, public domain). No production systems, real users, or proprietary logs were
+      used. All findings are based on simulated/sample events and are documented with explicit confidence labels and
+      limitations. This is an academic demonstration of the Hayabusa + MITRE ATT&amp;CK threat hunting workflow.
+    </p>
+  </div>
+
+  <!-- ─── STATS ─── -->
+  <div class="stats-grid">
+    <div class="stat-card orange">
+      <div class="stat-label">High-Priority Alerts</div>
+      <div class="stat-value orange">11</div>
+      <div class="stat-sub">of 38 total Hayabusa alerts</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Documented Findings</div>
+      <div class="stat-value red">4</div>
+      <div class="stat-sub">F-01 · F-02 · F-03 · F-04</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Validated Observations</div>
+      <div class="stat-value green">3</div>
+      <div class="stat-sub">F-01 · F-02 · F-04</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">ATT&amp;CK Techniques</div>
+      <div class="stat-value purple">5</div>
+      <div class="stat-sub">across 3 tactics</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">EVTX Files Analyzed</div>
+      <div class="stat-value blue">3</div>
+      <div class="stat-sub">Security + Sysmon channels</div>
+    </div>
+  </div>
+
+  <!-- ─── FINDINGS ─── -->
+  <div class="section-header">
+    <div class="icon icon-red">🔍</div>
+    <h2>Documented Findings</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="findings-grid">
+
+    <!-- F-01 -->
+    <div class="finding-card" id="finding-f01">
+      <div class="finding-header">
+        <span class="finding-id-badge">F-01</span>
+        <div class="finding-title">Suspicious Process Access To LSASS Memory</div>
+        <div class="finding-tags">
+          <span class="tag tag-high">high</span>
+          <span class="tag tag-validated">Validated</span>
+          <span class="tag tag-conf-med">Confidence: Medium</span>
+        </div>
+      </div>
+      <div class="finding-body">
+        <div class="finding-meta">
+          <div class="meta-item">
+            <span class="meta-label">Timestamp</span>
+            <span class="meta-value">2026-10-01T01:03:15Z</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Host</span>
+            <span class="meta-value">WORKSTATION-A</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">ATT&amp;CK</span>
+            <span class="meta-value">T1003.001</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Channel</span>
+            <span class="meta-value">Sysmon / EventID:10</span>
+          </div>
+        </div>
+        <div class="finding-interpretation">
+          python.exe opened lsass.exe memory with PROCESS_VM_READ (0x1010) access rights. This pattern is consistent with pypykatz / Impacket credential extraction tools. Occurred 16 seconds after the PowerShell-to-Python execution chain (F-02).
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Benign Explanation</div>
+          <div class="detail-value">A Python-based security product could legitimately scan LSASS — no known AV uses python.exe for this.</div>
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Limitation</div>
+          <div class="detail-value warn">No parent process chain. No network evidence. No dump file creation observed.</div>
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Next Step</div>
+          <div class="detail-value green">Correlate network connections from python.exe; check for .dmp files in %TEMP%.</div>
+        </div>
+        <div class="evidence-box">Sysmon EventID:10 row 47 · SourceImage: C:\Python39\python.exe · TargetImage: lsass.exe · GrantedAccess: 0x1010</div>
+      </div>
+    </div>
+
+    <!-- F-02 -->
+    <div class="finding-card" id="finding-f02">
+      <div class="finding-header">
+        <span class="finding-id-badge">F-02</span>
+        <div class="finding-title">PowerShell Encoded Command Execution</div>
+        <div class="finding-tags">
+          <span class="tag tag-high">high</span>
+          <span class="tag tag-validated">Validated</span>
+          <span class="tag tag-conf-high">Confidence: High</span>
+        </div>
+      </div>
+      <div class="finding-body">
+        <div class="finding-meta">
+          <div class="meta-item">
+            <span class="meta-label">Timestamp</span>
+            <span class="meta-value">2026-10-01T01:02:47Z</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Host</span>
+            <span class="meta-value">WORKSTATION-A</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">ATT&amp;CK</span>
+            <span class="meta-value">T1059.001 · T1027.010</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Channel</span>
+            <span class="meta-value">Security / EventID:4688</span>
+          </div>
+        </div>
+        <div class="finding-interpretation">
+          PowerShell invoked with -Exec Bypass -NoP -NonI -W Hidden and a Base64-encoded command block. Decoded prefix: <code>$client = New-Object</code> — consistent with a reverse shell or download cradle. This is the initial execution vector for the attack chain.
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Benign Explanation</div>
+          <div class="detail-value">Admins occasionally use -Enc for special character handling — context strongly argues against this here.</div>
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Limitation</div>
+          <div class="detail-value warn">Script Block Logging (Event 4104) not enabled — full decoded payload unavailable. No network destination visible.</div>
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Next Step</div>
+          <div class="detail-value green">Enable PowerShell SBL; check proxy/firewall logs for outbound connections ~01:02–01:05 UTC.</div>
+        </div>
+        <div class="evidence-box">Security EventID:4688 row 12 · CommandLine: powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc JABjAGwAaQBl...</div>
+      </div>
+    </div>
+
+    <!-- F-03 -->
+    <div class="finding-card" id="finding-f03">
+      <div class="finding-header">
+        <span class="finding-id-badge">F-03</span>
+        <div class="finding-title">Local Administrator Account Modification</div>
+        <div class="finding-tags">
+          <span class="tag tag-high">high</span>
+          <span class="tag tag-candidate">Candidate</span>
+          <span class="tag tag-conf-med">Confidence: Medium</span>
+        </div>
+      </div>
+      <div class="finding-body">
+        <div class="finding-meta">
+          <div class="meta-item">
+            <span class="meta-label">Timestamp</span>
+            <span class="meta-value">2026-10-01T02:00:13Z</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Host</span>
+            <span class="meta-value">WORKSTATION-A</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">ATT&amp;CK</span>
+            <span class="meta-value">T1136.001</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Channel</span>
+            <span class="meta-value">Security / EventID:4688</span>
+          </div>
+        </div>
+        <div class="finding-interpretation">
+          net.exe executed with <code>net user administrator [password] /add</code> from cmd.exe — itself spawned from the same PowerShell session in F-02. Potential persistence or privilege escalation via built-in administrator account manipulation.
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Benign Explanation</div>
+          <div class="detail-value">IT may reset the built-in admin password via script — context (suspicious parent chain) argues against this.</div>
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Limitation</div>
+          <div class="detail-value warn">No EventID:4720/4738 captured — cannot confirm command execution succeeded.</div>
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Next Step</div>
+          <div class="detail-value green">Check Security Events 4720, 4738, 4722 after timestamp; confirm admin account state.</div>
+        </div>
+        <div class="evidence-box">Security EventID:4688 row 21 · CommandLine: net user administrator Password123 /add · Parent: cmd.exe → powershell.exe</div>
+      </div>
+    </div>
+
+    <!-- F-04 -->
+    <div class="finding-card" id="finding-f04">
+      <div class="finding-header">
+        <span class="finding-id-badge">F-04</span>
+        <div class="finding-title">Scheduled Task Persistence via %TEMP% Batch File</div>
+        <div class="finding-tags">
+          <span class="tag tag-high">high</span>
+          <span class="tag tag-validated">Validated</span>
+          <span class="tag tag-conf-high">Confidence: High</span>
+        </div>
+      </div>
+      <div class="finding-body">
+        <div class="finding-meta">
+          <div class="meta-item">
+            <span class="meta-label">Timestamp</span>
+            <span class="meta-value">2026-10-01T03:15:30Z</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Host</span>
+            <span class="meta-value">WORKSTATION-A</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">ATT&amp;CK</span>
+            <span class="meta-value">T1053.005</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Channel</span>
+            <span class="meta-value">Security / EventID:4698</span>
+          </div>
+        </div>
+        <div class="finding-interpretation">
+          Scheduled task <code>\Updater</code> created — runs at every logon with SYSTEM privileges — payload is a batch file in <code>%TEMP%</code>. Dual evidence: schtasks.exe command line (EventID:4688) and task creation log (EventID:4698). Classic T1053.005 persistence mechanism.
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Benign Explanation</div>
+          <div class="detail-value">Legitimate installers create scheduled tasks — %TEMP% as path + SYSTEM run-level is not consistent with legitimate software.</div>
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Limitation</div>
+          <div class="detail-value warn">Batch file content (update.bat) not captured — payload intent not confirmed.</div>
+        </div>
+        <div class="finding-detail-row">
+          <div class="detail-label">Next Step</div>
+          <div class="detail-value green">Retrieve and analyze update.bat; check for subsequent execution via EventID:4688 after logon events.</div>
+        </div>
+        <div class="evidence-box">Security EventID:4698 row 30 · TaskName: \Updater · Command: C:\Users\user01\AppData\Local\Temp\update.bat · RunAs: SYSTEM · Trigger: OnLogon</div>
+      </div>
+    </div>
+
+  </div><!-- /findings-grid -->
+
+  <!-- ─── ATT&CK MAPPING ─── -->
+  <div class="section-header">
+    <div class="icon icon-purple">🎯</div>
+    <h2>MITRE ATT&amp;CK Mapping</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="attack-grid">
+    <div class="attack-card" id="attack-t1003">
+      <div class="attack-card-header">
+        <span class="technique-badge tactic-cred">T1003.001</span>
+        <div>
+          <div class="attack-card-title">OS Credential Dumping: LSASS Memory</div>
+          <div class="attack-card-tactic">Tactic: Credential Access · Finding: F-01</div>
+        </div>
+      </div>
+      <div class="attack-card-rationale">
+        python.exe opened lsass.exe with PROCESS_VM_READ (0x1010) — standard access pattern for pypykatz / Impacket credential extraction without dumping to disk.
+      </div>
+    </div>
+
+    <div class="attack-card" id="attack-t1059">
+      <div class="attack-card-header">
+        <span class="technique-badge tactic-exec">T1059.001</span>
+        <div>
+          <div class="attack-card-title">Command and Scripting Interpreter: PowerShell</div>
+          <div class="attack-card-tactic">Tactic: Execution · Finding: F-02</div>
+        </div>
+      </div>
+      <div class="attack-card-rationale">
+        PowerShell invoked with -Exec Bypass + Base64-encoded payload + hidden window flags. Decoded payload initializes a .NET network client object — consistent with reverse shell / download cradle.
+      </div>
+    </div>
+
+    <div class="attack-card" id="attack-t1027">
+      <div class="attack-card-header">
+        <span class="technique-badge tactic-evade">T1027.010</span>
+        <div>
+          <div class="attack-card-title">Obfuscated Files or Information: Command Obfuscation</div>
+          <div class="attack-card-tactic">Tactic: Defense Evasion · Finding: F-02</div>
+        </div>
+      </div>
+      <div class="attack-card-rationale">
+        Base64-encoded -Enc payload combined with -W Hidden and -NonI flags demonstrates deliberate evasion of plain-text command-line inspection.
+      </div>
+    </div>
+
+    <div class="attack-card" id="attack-t1136">
+      <div class="attack-card-header">
+        <span class="technique-badge tactic-persist">T1136.001</span>
+        <div>
+          <div class="attack-card-title">Create Account: Local Account</div>
+          <div class="attack-card-tactic">Tactic: Persistence · Finding: F-03</div>
+        </div>
+      </div>
+      <div class="attack-card-rationale">
+        net user administrator [password] /add executed from within the suspicious PowerShell session. Candidate mapping — command execution success not confirmed.
+      </div>
+    </div>
+
+    <div class="attack-card" id="attack-t1053">
+      <div class="attack-card-header">
+        <span class="technique-badge tactic-persist">T1053.005</span>
+        <div>
+          <div class="attack-card-title">Scheduled Task/Job: Scheduled Task</div>
+          <div class="attack-card-tactic">Tactic: Persistence · Finding: F-04</div>
+        </div>
+      </div>
+      <div class="attack-card-rationale">
+        schtasks /create with /ru System /sc onlogon pointing to %TEMP%\update.bat. Both command-line (EventID:4688) and task log (EventID:4698) provide dual evidence. High-confidence mapping.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TIMELINE ─── -->
+  <div class="section-header">
+    <div class="icon icon-blue">⏱️</div>
+    <h2>Attack Timeline</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="timeline" id="timeline">
+
+    <div class="timeline-event benign">
+      <div class="timeline-top">
+        <span class="timeline-ts">2026-10-01T00:14:22Z</span>
+        <span class="timeline-host">WORKSTATION-A</span>
+        <span class="badge badge-info">EventID:4688</span>
+      </div>
+      <div class="timeline-summary">user01 opened Command Prompt from Windows Explorer — routine user activity (baseline)</div>
+      <div class="timeline-ref">Security_4688.evtx row 8</div>
+    </div>
+
+    <div class="timeline-event has-finding">
+      <div class="timeline-top">
+        <span class="timeline-ts">2026-10-01T01:02:47Z</span>
+        <span class="timeline-host">WORKSTATION-A</span>
+        <span class="badge badge-danger">F-02 · EventID:4688</span>
+      </div>
+      <div class="timeline-summary">PowerShell launched with -Exec Bypass, -W Hidden, and Base64-encoded payload from cmd.exe (T1059.001 + T1027.010)</div>
+      <div class="timeline-ref">Security_4688.evtx row 12</div>
+    </div>
+
+    <div class="timeline-event">
+      <div class="timeline-top">
+        <span class="timeline-ts">2026-10-01T01:03:01Z</span>
+        <span class="timeline-host">WORKSTATION-A</span>
+        <span class="badge badge-warn">EventID:4688</span>
+      </div>
+      <div class="timeline-summary">python.exe spawned as child of powershell.exe with argument 'exploit.py'</div>
+      <div class="timeline-ref">Security_4688.evtx row 13</div>
+    </div>
+
+    <div class="timeline-event has-finding">
+      <div class="timeline-top">
+        <span class="timeline-ts">2026-10-01T01:03:15Z</span>
+        <span class="timeline-host">WORKSTATION-A</span>
+        <span class="badge badge-danger">F-01 · EventID:10</span>
+      </div>
+      <div class="timeline-summary">python.exe opened lsass.exe with PROCESS_VM_READ (0x1010) — credential access behavior (T1003.001)</div>
+      <div class="timeline-ref">Sysmon_10.evtx row 47</div>
+    </div>
+
+    <div class="timeline-event">
+      <div class="timeline-top">
+        <span class="timeline-ts">2026-10-01T01:45:00Z</span>
+        <span class="timeline-host">WORKSTATION-A</span>
+        <span class="badge badge-warn">EventID:4688</span>
+      </div>
+      <div class="timeline-summary">cmd.exe /c whoami executed — attacker likely confirming process context/privilege level</div>
+      <div class="timeline-ref">Security_4688.evtx row 18</div>
+    </div>
+
+    <div class="timeline-event has-finding">
+      <div class="timeline-top">
+        <span class="timeline-ts">2026-10-01T02:00:13Z</span>
+        <span class="timeline-host">WORKSTATION-A</span>
+        <span class="badge badge-danger">F-03 · EventID:4688</span>
+      </div>
+      <div class="timeline-summary">net user administrator [password] /add — local account modification for persistence (T1136.001 — candidate)</div>
+      <div class="timeline-ref">Security_4688.evtx row 21</div>
+    </div>
+
+    <div class="timeline-event has-finding">
+      <div class="timeline-top">
+        <span class="timeline-ts">2026-10-01T03:15:30Z</span>
+        <span class="timeline-host">WORKSTATION-A</span>
+        <span class="badge badge-danger">F-04 · EventID:4698</span>
+      </div>
+      <div class="timeline-summary">Scheduled task '\Updater' created — SYSTEM privilege — %TEMP%\update.bat — triggers on every logon (T1053.005)</div>
+      <div class="timeline-ref">Security_4698.evtx row 30</div>
+    </div>
+
+  </div>
+
+  <!-- ─── LIMITATIONS ─── -->
+  <div class="section-header">
+    <div class="icon icon-yellow">⚠️</div>
+    <h2>Limitations &amp; Caveats</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="limitations-grid">
+    <div class="limitation-card">
+      <h4>Sample Dataset</h4>
+      <p>Only 3 EVTX files covering a single simulated day. Production analysis requires weeks of logs across multiple systems.</p>
+    </div>
+    <div class="limitation-card">
+      <h4>No Script Block Logging</h4>
+      <p>PowerShell Event ID 4104 was not enabled in this sample. The full decoded payload of F-02 is unavailable — cannot confirm destination or C2 address.</p>
+    </div>
+    <div class="limitation-card">
+      <h4>No Network Telemetry</h4>
+      <p>Lateral movement, C2 communication, and data exfiltration cannot be confirmed without firewall, proxy, or EDR network logs.</p>
+    </div>
+    <div class="limitation-card">
+      <h4>No Account Event Confirmation (F-03)</h4>
+      <p>Event IDs 4720/4738 were not captured. Cannot confirm whether the administrator account modification command succeeded.</p>
+    </div>
+    <div class="limitation-card">
+      <h4>Batch File Content Unknown (F-04)</h4>
+      <p>update.bat was not recovered. The persistence payload's intent (e.g., reverse shell vs. credential theft) is unconfirmed.</p>
+    </div>
+    <div class="limitation-card">
+      <h4>Rule-Based Detection Only</h4>
+      <p>Hayabusa uses signature-based rules. Novel techniques or living-off-the-land variants not matching existing rules would be missed.</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer>
+  <p>
+    Windows Threat Hunting System Using Hayabusa and MITRE ATT&amp;CK<br/>
+    Dataset: Publicly available EVTX samples (EVTX-ATTACK-SAMPLES, public domain) &nbsp;|&nbsp;
+    Tool: Hayabusa v2.18.0 (MIT) &nbsp;|&nbsp;
+    Rules: Sigma-based community rules &nbsp;|&nbsp;
+    Generated: 2026-10-28<br/>
+    <span style="color: var(--text-muted);">Academic project — all findings are evidence-labeled with explicit confidence and limitation statements.</span>
+  </p>
+</footer>
+
+</body>
+</html>
