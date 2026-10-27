@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hayabusa Threat Hunting — Findings Summary</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#172033;background:#f4f7fb}
+body{margin:0}.wrap{max-width:1200px;margin:auto;padding:24px}
+header{background:#13294b;color:white;padding:24px;border-radius:14px}
+header p{color:#d5e2f4;margin-bottom:0}.muted{color:#5b6577;font-size:.92rem}
+.panel{background:white;border:1px solid #dce3ee;border-radius:12px;padding:18px;margin-top:16px}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+label{display:block;font-weight:650;font-size:.9rem;margin-bottom:5px}
+input,select,button{font:inherit;padding:9px;border:1px solid #c7d0df;border-radius:8px;background:white}
+button{cursor:pointer;background:#173b68;color:white;border-color:#173b68}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.metric{background:white;border:1px solid #dce3ee;border-radius:12px;padding:16px}
+.metric .num{font-size:1.8rem;font-weight:750}.metric .label{color:#5b6577;font-size:.9rem}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:10px;border-bottom:1px solid #e5eaf1;vertical-align:top;min-width:100px}
+th{background:#eef3fa;position:sticky;top:0}td.long{min-width:210px;white-space:pre-wrap}
+.tag{display:inline-block;border-radius:20px;padding:3px 9px;background:#edf1f6;font-size:.82rem}
+.warning{background:#fff8e6;border:1px solid #f0d68a;padding:12px;border-radius:9px}
+footer{padding:18px 0;color:#5b6577;font-size:.85rem}
+@media(max-width:600px){.wrap{padding:12px}header{padding:18px}}
+</style>
+</head>
+<body><main class="wrap">
+<header>
+<h1>Windows Threat Hunting with Hayabusa</h1>
+<p>Member 5 — Reporting, Interface &amp; QA Summary</p>
+</header>
+<div class="panel">
+<h2>Load the team's findings</h2>
+<p>Select the <code>findings.csv</code> produced by Member 4. Optionally load <code>attack_mapping.csv</code>. Files are read locally in this browser tab; they are not uploaded to a server.</p>
+<div class="controls">
+<div><label for="findingsFile">Findings CSV (required)</label><input id="findingsFile" type="file" accept=".csv,text/csv"></div>
+<div><label for="mappingFile">ATT&amp;CK mapping CSV (optional)</label><input id="mappingFile" type="file" accept=".csv,text/csv"></div>
+<button id="clearBtn" type="button">Clear data</button>
+</div>
+<p class="muted">Expected findings headers: finding_id, timestamp, timezone, alert_name, severity, status, confidence, evidence_reference, interpretation, benign_explanation, limitation, next_step.</p>
+<div id="message" class="muted" role="status">No findings loaded yet.</div>
+</div>
+<div class="cards">
+<div class="metric"><div class="label">Loaded findings</div><div class="num" id="total">—</div></div>
+<div class="metric"><div class="label">High / critical severity*</div><div class="num" id="high">—</div></div>
+<div class="metric"><div class="label">Candidate</div><div class="num" id="candidate">—</div></div>
+<div class="metric"><div class="label">Inconclusive</div><div class="num" id="inconclusive">—</div></div>
+<div class="metric"><div class="label">Missing evidence reference</div><div class="num" id="missingEvidence">—</div></div>
+</div>
+<div class="panel">
+<h2>Filter findings</h2>
+<div class="controls">
+<div><label for="search">Search text</label><input id="search" type="search" placeholder="ID, alert, interpretation…"></div>
+<div><label for="severity">Severity</label><select id="severity"><option value="">All severities</option></select></div>
+<div><label for="status">Status</label><select id="status"><option value="">All statuses</option><option>candidate</option><option>validated_observation</option><option>inconclusive</option></select></div>
+</div>
+<p id="visibleCount" class="muted">0 rows displayed</p>
+<div class="tablewrap"><table><thead><tr>
+<th>Finding ID / Time</th><th>Alert / Severity</th><th>Status / Confidence</th><th>Interpretation / Benign explanation</th><th>Evidence reference</th><th>ATT&amp;CK</th><th>Limitation / Next step</th>
+</tr></thead><tbody id="rows"><tr><td colspan="7">Load a findings CSV to begin.</td></tr></tbody></table></div>
+</div>
+<div class="panel">
+<h2>Reading the results responsibly</h2>
+<div class="warning"><strong>Important:</strong> a Hayabusa alert is a lead, not proof of compromise. Confirm the underlying event evidence and preserve uncertainty. ATT&amp;CK mappings should be shown only when supported; missing or uncertain mappings must not be guessed.</div>
+<p class="muted">*The severity summary counts values containing “high” or “critical”; confirm your team's original Hayabusa severity labels. This page does not change or normalize the source CSV.</p>
+</div>
+<footer>Local summary view. Use only authorized, approved data. Do not publish screenshots containing unnecessary hostnames, usernames, paths, or personal data.</footer>
+</main>
+<script>
+let findings=[], mappings=[];
+function parseCSV(text){
+  const out=[]; let row=[], field='', quoted=false;
+  text=text.replace(/^\uFEFF/,'');
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+    if(quoted){if(c==='"'&&n==='"'){field+='"';i++;}else if(c==='"'){quoted=false;}else{field+=c;}}
+    else if(c==='"'){quoted=true;}
+    else if(c===','){row.push(field);field='';}
+    else if(c==='\n'){row.push(field);out.push(row);row=[];field='';}
+    else if(c!=='\r'){field+=c;}
+  }
+  if(field.length||row.length){row.push(field);out.push(row);}
+  if(!out.length)return [];
+  const headers=out.shift().map(x=>x.trim());
+  return out.filter(r=>r.some(x=>x.trim()!=='')).map(r=>Object.fromEntries(headers.map((h,i)=>[h,(r[i]||'').trim()])));
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function val(f,k){return f[k]||''}
+function setMessage(s){document.getElementById('message').textContent=s}
+function render(){
+ const q=document.getElementById('search').value.toLowerCase();
+ const sev=document.getElementById('severity').value, st=document.getElementById('status').value;
+ const filtered=findings.filter(f=>{
+  const hay=Object.values(f).join(' ').toLowerCase();
+  return (!q||hay.includes(q))&&(!sev||val(f,'severity')===sev)&&(!st||val(f,'status')===st);
+ });
+ document.getElementById('total').textContent=findings.length;
+ document.getElementById('high').textContent=findings.filter(f=>/high|critical/i.test(val(f,'severity'))).length;
+ document.getElementById('candidate').textContent=findings.filter(f=>val(f,'status')==='candidate').length;
+ document.getElementById('inconclusive').textContent=findings.filter(f=>val(f,'status')==='inconclusive').length;
+ document.getElementById('missingEvidence').textContent=findings.filter(f=>!val(f,'evidence_reference')).length;
+ document.getElementById('visibleCount').textContent=`${filtered.length} of ${findings.length} rows displayed`;
+ const tbody=document.getElementById('rows');
+ if(!filtered.length){tbody.innerHTML='<tr><td colspan="7">No matching findings.</td></tr>';return;}
+ tbody.innerHTML=filtered.map(f=>{
+  const mm=mappings.filter(m=>val(m,'finding_id')===val(f,'finding_id'));
+  const attack=mm.length?mm.map(m=>`${val(m,'technique_id')} ${val(m,'technique_name')} — ${val(m,'mapping_rationale')}`).join('\n'):'Unmapped / no mapping loaded';
+  return `<tr><td><strong>${esc(val(f,'finding_id'))}</strong><br>${esc(val(f,'timestamp'))}<br><span class="muted">${esc(val(f,'timezone'))}</span></td>
+  <td>${esc(val(f,'alert_name'))}<br><span class="tag">${esc(val(f,'severity')||'Unspecified')}</span></td>
+  <td>${esc(val(f,'status'))}<br><span class="muted">${esc(val(f,'confidence'))}</span></td>
+  <td class="long">${esc(val(f,'interpretation'))}<br><br><strong>Possible benign explanation:</strong><br>${esc(val(f,'benign_explanation'))}</td>
+  <td class="long">${esc(val(f,'evidence_reference')||'MISSING — review required')}</td>
+  <td class="long">${esc(attack)}</td><td class="long"><strong>Limitation:</strong><br>${esc(val(f,'limitation'))}<br><br><strong>Next step:</strong><br>${esc(val(f,'next_step'))}</td></tr>`;
+ }).join('');
+}
+document.getElementById('findingsFile').addEventListener('change',async e=>{
+ const file=e.target.files[0];if(!file)return;
+ try{
+  findings=parseCSV(await file.text());
+  const required=['finding_id','timestamp','timezone','alert_name','severity','status','confidence','evidence_reference','interpretation','benign_explanation','limitation','next_step'];
+  const missing=required.filter(k=>!(findings[0]||{}).hasOwnProperty(k));
+  if(missing.length){setMessage('CSV loaded, but expected columns are missing: '+missing.join(', ')+'. Check the agreed schema.');}
+  else setMessage(`Loaded ${findings.length} findings from ${file.name}. Review missing evidence and schema warnings before presenting.`);
+  const select=document.getElementById('severity');
+  const old=select.value;select.innerHTML='<option value="">All severities</option>';
+  [...new Set(findings.map(f=>val(f,'severity')).filter(Boolean))].sort().forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;select.appendChild(o)});
+  select.value=old;render();
+ }catch(err){setMessage('Could not read CSV: '+err.message);}
+});
+document.getElementById('mappingFile').addEventListener('change',async e=>{
+ const file=e.target.files[0];if(!file)return;
+ try{mappings=parseCSV(await file.text());setMessage(`Loaded ${findings.length} findings and ${mappings.length} ATT&CK mapping rows. Check mapping rationale and evidence.`);render();}
+ catch(err){setMessage('Could not read mapping CSV: '+err.message);}
+});
+['search','severity','status'].forEach(id=>document.getElementById(id).addEventListener('input',render));
+document.getElementById('clearBtn').addEventListener('click',()=>{
+ findings=[];mappings=[];document.getElementById('findingsFile').value='';document.getElementById('mappingFile').value='';
+ document.getElementById('search').value='';document.getElementById('severity').innerHTML='<option value="">All severities</option>';
+ document.getElementById('status').value='';setMessage('No findings loaded yet.');render();
+});
+render();
+</script></body></html>
