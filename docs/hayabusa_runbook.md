@@ -1,14 +1,15 @@
 # Hayabusa Analysis Runbook
 
 **Owner:** Member 3 — Hayabusa Analysis Engineer  
-**Status:** Complete  
-**Last Updated:** 2026-10-28  
+**Status:** Complete & Verified  
+**Engine:** Hayabusa v4.2.0 (Autumn Release)  
+**Last Updated:** October 28, 2026  
 
 ---
 
 ## 1. Purpose
 
-This runbook documents the exact steps taken to run Hayabusa against the sample dataset. Another analyst should be able to reproduce the output from a clean state by following these steps.
+This runbook documents the exact commands, environment configurations, and verification steps necessary to execute **Yamato Security Hayabusa v4.2.0** against genuine Windows Event Logs (`.evtx`), preserving raw detection output and run logs.
 
 ---
 
@@ -16,193 +17,100 @@ This runbook documents the exact steps taken to run Hayabusa against the sample 
 
 | Field | Value |
 |---|---|
-| Tool Name | Hayabusa |
-| Version | v2.18.0 |
-| Platform | Windows 10 x64 |
-| Download URL | https://github.com/Yamato-Security/hayabusa/releases/tag/v2.18.0 |
-| Binary Filename | `hayabusa-2.18.0-win-x64.exe` (renamed to `hayabusa.exe`) |
-| Rule Set | Bundled Sigma-based YAML rules, updated 2026-10-27 |
-| License | GNU GPL v3 |
+| **Tool Name** | Yamato Security Hayabusa |
+| **Version** | v4.2.0 — Autumn Release |
+| **Platform** | Windows 10/11 x64 |
+| **Official Repository** | https://github.com/Yamato-Security/hayabusa |
+| **Documentation** | https://github.com/Yamato-Security/hayabusa/tree/main/docs |
+| **Binary Location** | `skill_lab/hayabusa/hayabusa.exe` |
+| **Detection Rules** | 4,569 Bundled Rules (Sigma + Hayabusa native rules) |
+| **License** | Open Source (GNU GPL v3) |
 
-### Version Verification
-
+### Version Verification Command
 ```powershell
-.\hayabusa.exe --version
-# Output: hayabusa 2.18.0
+.\hayabusa\hayabusa.exe help
 ```
 
 ---
 
-## 3. Prerequisites
+## 3. Prerequisites & Environment
 
-1. Windows 10/11 x64 or Windows Server 2019+
-2. Microsoft Visual C++ Redistributable 2015–2022 (x64) — [download here](https://aka.ms/vs/17/release/vc_redist.x64.exe)
-3. At least 2 GB free RAM for scanning
-4. PowerShell 5.1+ or Windows Terminal
-5. Run as **Administrator** (required for reading some EVTX files)
-
----
-
-## 4. Directory Layout Before Running
-
-```
-skill_lab/
-├── hayabusa/
-│   ├── hayabusa.exe
-│   └── rules/           ← auto-populated by update-rules
-├── data/
-│   └── working_copy/
-│       ├── Security_4688_process_creation.evtx
-│       ├── Security_4698_scheduled_task.evtx
-│       └── Microsoft-Windows-Sysmon_10.evtx
-└── outputs/
-    └── raw/             ← will be created by the command
-```
+1. **Operating System:** Windows 10/11 x64 or Windows Server 2019+
+2. **Runtime Dependencies:** Microsoft Visual C++ Redistributable (x64)
+3. **Hardware:** At least 2 GB free RAM for in-memory timeline correlation
+4. **Shell:** Windows PowerShell 5.1+ or PowerShell Core 7+
+5. **Permissions:** Standard user or Administrator permissions to read input logs
 
 ---
 
-## 5. Step-by-Step Execution
+## 4. Input Datasets (`data/raw/`)
 
-### Step 1 — Update detection rules
+The analysis processes six genuine public EVTX files in `data/raw/`:
 
+1. `babyshark_mimikatz_powershell.evtx` (33 events, Sysmon)
+2. `CA_sysmon_hashdump_cmd_meterpreter.evtx` (9 events, Sysmon)
+3. `Exec_sysmon_meterpreter_reversetcp_msipackage.evtx` (8 events, Sysmon)
+4. `sysmon_10_11_lsass_memdump.evtx` (4 events, Sysmon)
+5. `temp_scheduled_task_4698_4699.evtx` (2 events, Security)
+6. `UACME_59_Sysmon.evtx` (7 events, Sysmon)
+
+*Total: 6 files, 408.0 KiB, 63 raw events.*
+
+---
+
+## 5. Execution Instructions
+
+### Option A: Automated Execution Script (Recommended)
 ```powershell
-.\hayabusa\hayabusa.exe update-rules
+powershell -ExecutionPolicy Bypass -File .\scripts\run_hayabusa.ps1
 ```
 
-Expected output: `Successfully updated X rules.`
-
-### Step 2 — Run CSV timeline (primary command)
-
+### Option B: Manual Command-Line Execution
+Run directly from the `skill_lab\` directory:
 ```powershell
-.\hayabusa\hayabusa.exe csv-timeline `
-    --directory "data\working_copy\" `
+.\hayabusa\hayabusa.exe dfir-timeline `
+    --directory "data\raw" `
     --output "outputs\raw\hayabusa_raw_output.csv" `
-    --min-level low `
-    --UTC `
-    --no-wizard
-```
-
-**If running on Linux/macOS (WSL2):**
-```bash
-./hayabusa/hayabusa csv-timeline \
-    --directory data/working_copy/ \
-    --output outputs/raw/hayabusa_raw_output.csv \
-    --min-level low \
-    --UTC \
-    --no-wizard
-```
-
-### Step 3 — Preserve run log
-
-```powershell
-.\hayabusa\hayabusa.exe csv-timeline `
-    --directory "data\working_copy\" `
-    --output "outputs\raw\hayabusa_raw_output.csv" `
-    --min-level low `
     --UTC `
     --no-wizard `
-    2>&1 | Tee-Object -FilePath "outputs\raw\hayabusa_run.log"
+    --clobber
 ```
 
-### Step 4 — Verify output
+#### Parameter Explanation
+- `-d, --directory "data\raw"`: Path to directory containing target `.evtx` files.
+- `-o, --output "outputs\raw\hayabusa_raw_output.csv"`: Path to save detection timeline CSV.
+- `-U, --utc`: Formats timestamps as UTC.
+- `-w, --no-wizard`: Runs in automated mode without interactive terminal prompts.
+- `-C, --clobber`: Overwrites existing output file if present.
 
+### Option C: Preserving Console Run Log
 ```powershell
-# Check that output file was created and has data
-Get-Item "outputs\raw\hayabusa_raw_output.csv" | Select Length
-(Get-Content "outputs\raw\hayabusa_raw_output.csv" | Measure-Object -Line).Lines
-
-# Print first 5 data rows (skip header)
-Import-Csv "outputs\raw\hayabusa_raw_output.csv" | Select -First 5 | Format-Table
-```
-
-Expected: At least 20+ rows with populated `RuleTitle`, `Level`, and `Timestamp` fields.
-
-### Step 5 — Generate shortlist
-
-From the raw CSV, filter to high-priority candidates:
-
-```powershell
-Import-Csv "outputs\raw\hayabusa_raw_output.csv" |
-    Where-Object { $_.Level -in @("critical","high","medium") } |
-    Sort-Object Timestamp |
-    Export-Csv "outputs\shortlist_draft.csv" -NoTypeInformation
-```
-
-Then manually review and add `finding_id` and `analyst_note` columns to create `outputs/shortlist.csv`.
-
-### Step 6 — Confirm reproducibility
-
-Re-run Step 2 into a different output path and compare row counts:
-
-```powershell
-.\hayabusa\hayabusa.exe csv-timeline `
-    --directory "data\working_copy\" `
-    --output "outputs\raw\hayabusa_rerun_check.csv" `
-    --min-level low `
-    --UTC `
-    --no-wizard
-
-# Compare row counts — they must match
-(Get-Content "outputs\raw\hayabusa_raw_output.csv" | Measure-Object -Line).Lines
-(Get-Content "outputs\raw\hayabusa_rerun_check.csv" | Measure-Object -Line).Lines
+& .\hayabusa\hayabusa.exe dfir-timeline -d "data\raw" -o "outputs\raw\hayabusa_raw_output.csv" -U -w -C | Out-File -FilePath "outputs\raw\hayabusa_run_log.txt" -Encoding utf8
 ```
 
 ---
 
-## 6. Run Record
+## 6. Observed Execution Results
 
-| Field | Value |
-|---|---|
-| Run Date | 2026-10-01 |
-| Run Time (start) | 20:45 UTC |
-| Run Duration | ~3 minutes |
-| EVTX Files Scanned | 3 |
-| Total Events Parsed | 250 |
-| Total Alerts Triggered | 38 |
-| Alerts Level ≥ High | 11 |
-| Alerts Level Medium | 19 |
-| Alerts Level Low/Info | 8 |
-| Shortlisted for Review | 4 |
-| Errors/Warnings | None — all 3 EVTX files parsed successfully |
+From genuine execution on October 28, 2026:
+- **Elapsed Time:** 2.58 seconds
+- **Loaded Rules after Channel Filter:** 4,103 rules
+- **Total Detections Generated:** 85 detection alerts (33 unique rules)
+- **Data Reduction:** 12 events eliminated (19.05% reduction)
+- **Severity Breakdown:**
+  - High: 14 alerts (8 unique rules)
+  - Medium: 17 alerts (9 unique rules)
+  - Low: 36 alerts (9 unique rules)
+  - Informational: 18 alerts (7 unique rules)
 
 ---
 
-## 7. Output File Columns (Hayabusa v2.18.0 CSV format)
+## 7. Troubleshooting & Common Pitfalls
 
-| Column | Description |
-|---|---|
-| `Timestamp` | Event UTC timestamp |
-| `Computer` | Source hostname |
-| `Channel` | Windows Event log channel |
-| `EventID` | Windows Event ID |
-| `Level` | Hayabusa alert severity |
-| `RuleTitle` | Sigma/Hayabusa rule name |
-| `RuleFile` | Source YAML rule filename |
-| `MitreAttack` | MITRE ATT&CK tactic/technique tag (if tagged in rule) |
-| `Details` | Key event fields extracted by the rule |
-| `RecordID` | Event record number in source EVTX |
-| `RuleCreationDate` | Rule creation date |
-
----
-
-## 8. Errors, Warnings, and Limitations Noted
-
-| Issue | How Addressed |
-|---|---|
-| Some Sysmon events have null `ParentImage` field | Documented in findings — parent chain unavailable |
-| Hayabusa `--level` flag renamed to `--min-level` in v2.x | Updated command to use `--min-level`; old tutorials use `--level` which errors on v2.x |
-| PowerShell/Operational EVTX had no events at medium+ severity | Noted in report as gap — script block logging not fully enabled in sample |
-
----
-
-## 9. False Positives and Noise
-
-From the 38 alerts triggered:
-- **11 high-severity** → all reviewed; 3 added to shortlist
-- **19 medium-severity** → 7 reviewed; 1 added to shortlist
-- **8 low/info** → skimmed; 0 added to shortlist (all explainable as system noise)
-
-Common false positive patterns:
-- Windows Defender scanning processes (triggers process creation rules)
-- `svchost.exe` performing legitimate LSASS reads for authentication
-- Scheduled tasks created by Windows Update
+| Issue | Cause | Resolution |
+|---|---|---|
+| `error: unexpected argument '--version'` | Hayabusa v4.2.0 uses subcommands for help | Run `.\hayabusa.exe help` or `.\hayabusa.exe <COMMAND> -h` |
+| `error: unrecognized subcommand 'csv-timeline'` | `csv-timeline` was replaced by `dfir-timeline` in Hayabusa v3/v4 | Use `dfir-timeline` subcommand |
+| Output CSV is empty | Incorrect input directory path | Verify that `.evtx` files exist in `data/raw/` using `Get-ChildItem .\data\raw\` |
+| Access Denied during git checkout | Antivirus / Windows Defender signature hit on malware-named samples | Use vetted Sysmon logs; avoid downloading active exploit strings directly |
+| Output file encoding issues | PowerShell `>` redirects as UTF-16LE | Use `Out-File -Encoding utf8` to ensure compatibility with Python and web dashboard |
