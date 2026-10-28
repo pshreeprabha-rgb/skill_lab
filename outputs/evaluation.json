@@ -1,0 +1,160 @@
+{
+  "metadata": {
+    "generated_at": "2026-10-28T05:17:48Z",
+    "processing_time_seconds": 5.404,
+    "processing_time_raw": "00:00:05.404",
+    "processing_time_source": "outputs/raw/hayabusa_run_log.txt (dfir-timeline elapsed time)",
+    "total_samples": 6,
+    "samples_with_relevant_alerts": 6,
+    "samples_missed": 0,
+    "samples_uncertain": 0,
+    "note": "Attribution of alerts to specific EVTX files is inferred from hostname patterns. The hayabusa_real_output.csv contains no source-file field. These metrics are approximate indicators, not benchmark results."
+  },
+  "limitations": [
+    "Only six small EVTX samples are included \u2014 not a representative benchmark.",
+    "No benign baseline is available; all samples are attack-focused.",
+    "Results do not establish production detection performance.",
+    "Alert-to-sample attribution is inferred from hostname patterns (no source-file field in CSV).",
+    "Potential noise counts are not verified false positives.",
+    "The evaluation does not constitute precision, recall, or F1 scores.",
+    "Multiple EVTX files may map to the same hostname (IEWIN7), making per-file attribution uncertain."
+  ],
+  "samples": [
+    {
+      "filename": "babyshark_mimikatz_powershell.evtx",
+      "expected_behavior": "PowerShell-based Mimikatz execution for credential dumping via LSASS memory access",
+      "expected_technique_ids": [
+        "T1059.001",
+        "T1003.001"
+      ],
+      "status": "hit",
+      "matching_alert_titles": [
+        "Password Dumper Remote Thread in LSASS",
+        "Potential Credential Dumping Attempt Via PowerShell",
+        "Potentially Suspicious GrantedAccess Flags On LSASS",
+        "Proc Access",
+        "Proc Access (Sysmon Alert)",
+        "Proc Injection"
+      ],
+      "matching_finding_ids": [],
+      "matched_technique_ids": [
+        "T1059.001",
+        "T1003.001"
+      ],
+      "possible_noise_alert_count": 0,
+      "total_attributed_alerts": 10,
+      "relevant_alert_count": 10,
+      "attribution_note": "At least one alert relevant to expected techniques found."
+    },
+    {
+      "filename": "CA_sysmon_hashdump_cmd_meterpreter.evtx",
+      "expected_behavior": "Command-and-control via Meterpreter with credential dump using hashdump module",
+      "expected_technique_ids": [
+        "T1003.001",
+        "T1059.003"
+      ],
+      "status": "hit",
+      "matching_alert_titles": [
+        "Always Install Elevated MSI Spawned Cmd And Powershell",
+        "Proc Exec (Non-Exe Filetype)",
+        "Proc Exec (Sysmon Alert)",
+        "Sysmon Configuration Update"
+      ],
+      "matching_finding_ids": [],
+      "matched_technique_ids": [
+        "T1003.001",
+        "T1059.003"
+      ],
+      "possible_noise_alert_count": 0,
+      "total_attributed_alerts": 7,
+      "relevant_alert_count": 7,
+      "attribution_note": "At least one alert relevant to expected techniques found."
+    },
+    {
+      "filename": "Exec_sysmon_meterpreter_reversetcp_msipackage.evtx",
+      "expected_behavior": "Meterpreter reverse TCP shell delivered via MSI package; possible process injection",
+      "expected_technique_ids": [
+        "T1566.001",
+        "T1055"
+      ],
+      "status": "hit",
+      "matching_alert_titles": [
+        "Proc Exec"
+      ],
+      "matching_finding_ids": [],
+      "matched_technique_ids": [
+        "T1566.001"
+      ],
+      "possible_noise_alert_count": 9,
+      "total_attributed_alerts": 11,
+      "relevant_alert_count": 2,
+      "attribution_note": "At least one alert relevant to expected techniques found. NOTE: Attribution confidence is low for this sample."
+    },
+    {
+      "filename": "sysmon_10_11_lsass_memdump.evtx",
+      "expected_behavior": "LSASS memory dump using procdump.exe captured via Sysmon EventID 10 and 11",
+      "expected_technique_ids": [
+        "T1003.001"
+      ],
+      "status": "hit",
+      "matching_alert_titles": [
+        "DMP/HDMP File Creation",
+        "File Created",
+        "LSASS Memory Access by Tool With Dump Keyword In Name",
+        "LSASS Process Memory Dump Creation Via Taskmgr.EXE",
+        "LSASS Process Memory Dump Files",
+        "Potential Credential Dumping Activity Via LSASS",
+        "Proc Access",
+        "Suspicious Process Access to LSASS with Dbgcore/Dbghelp DLLs"
+      ],
+      "matching_finding_ids": [],
+      "matched_technique_ids": [
+        "T1003.001"
+      ],
+      "possible_noise_alert_count": 0,
+      "total_attributed_alerts": 13,
+      "relevant_alert_count": 13,
+      "attribution_note": "At least one alert relevant to expected techniques found."
+    },
+    {
+      "filename": "sysmon_local_account_creation_and_added_admingroup_12_13.evtx",
+      "expected_behavior": "Local account creation and addition to Administrators group via net.exe or equivalent",
+      "expected_technique_ids": [
+        "T1136.001"
+      ],
+      "status": "hit",
+      "matching_alert_titles": [
+        "Reg Key Create/Delete (Sysmon Alert)",
+        "Reg Key Value Set (Sysmon Alert)"
+      ],
+      "matching_finding_ids": [],
+      "matched_technique_ids": [
+        "T1136.001"
+      ],
+      "possible_noise_alert_count": 4,
+      "total_attributed_alerts": 17,
+      "relevant_alert_count": 13,
+      "attribution_note": "At least one alert relevant to expected techniques found."
+    },
+    {
+      "filename": "temp_scheduled_task_4698_4699.evtx",
+      "expected_behavior": "Scheduled task creation for persistence using Windows Task Scheduler",
+      "expected_technique_ids": [
+        "T1053.005"
+      ],
+      "status": "hit",
+      "matching_alert_titles": [
+        "Scheduled Task Deletion",
+        "Task Created"
+      ],
+      "matching_finding_ids": [],
+      "matched_technique_ids": [
+        "T1053.005"
+      ],
+      "possible_noise_alert_count": 1,
+      "total_attributed_alerts": 3,
+      "relevant_alert_count": 2,
+      "attribution_note": "At least one alert relevant to expected techniques found. NOTE: Attribution confidence is low for this sample."
+    }
+  ]
+}

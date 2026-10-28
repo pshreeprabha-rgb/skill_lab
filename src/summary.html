@@ -618,9 +618,129 @@
       .attack-grid { grid-template-columns: 1fr; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* ─────────────── LIVE REFRESH INDICATOR ─────────────── */
+    #live-status-bar {
+      background: rgba(6,182,212,0.07);
+      border-bottom: 1px solid rgba(6,182,212,0.15);
+      padding: 7px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 0.73rem;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    #live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent-cyan);
+      animation: pulse 2s infinite;
+    }
+    #live-dot.paused { background: var(--accent-yellow); animation: none; }
+    #live-dot.error  { background: var(--accent-red); animation: none; }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+    #refresh-toggle {
+      background: rgba(6,182,212,0.12);
+      border: 1px solid rgba(6,182,212,0.3);
+      color: var(--accent-cyan);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      transition: background 0.2s;
+    }
+    #refresh-toggle:hover { background: rgba(6,182,212,0.22); }
+    #live-warning {
+      display: none;
+      background: rgba(239,68,68,0.10);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: #ef4444;
+      font-size: 0.78rem;
+      margin: 0 0 12px 0;
+    }
+    /* ─────────────── TAB NAVIGATION ─────────────── */
+    .tab-nav {
+      display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap;
+      border-bottom: 1px solid var(--bg-border); padding-bottom: 0;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 8px 18px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      margin-bottom: -1px;
+    }
+    .tab-btn.active { color: var(--accent-cyan); border-color: var(--accent-cyan); }
+    .tab-btn:hover:not(.active) { color: var(--text-primary); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    /* ─────────────── EVALUATION TAB ─────────────── */
+    .eval-limitation-box {
+      background: rgba(245,158,11,0.07);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+    }
+    .eval-limitation-box h4 { color: #f59e0b; font-size: 0.82rem; margin-bottom: 8px; }
+    .eval-limitation-box ul { list-style: disc; padding-left: 18px; }
+    .eval-limitation-box li { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 4px; }
+    .eval-sample-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(340px,1fr)); gap: 14px;
+    }
+    .eval-sample-card {
+      background: var(--bg-card); border: 1px solid var(--bg-border);
+      border-radius: 12px; padding: 16px 18px;
+    }
+    .eval-sample-card.hit   { border-left: 3px solid var(--accent-green); }
+    .eval-sample-card.miss  { border-left: 3px solid var(--accent-red); }
+    .eval-sample-card.uncertain { border-left: 3px solid var(--accent-yellow); }
+    .eval-status-badge {
+      display: inline-block; padding: 2px 10px; border-radius: 999px;
+      font-size: 0.67rem; font-weight: 700; text-transform: uppercase; margin-left: 8px;
+    }
+    .eval-status-badge.hit { background: rgba(16,185,129,0.15); color: #10b981; }
+    .eval-status-badge.miss { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .eval-status-badge.uncertain { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    /* ─────────────── DOWNLOAD BUTTONS ─────────────── */
+    .download-bar {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; align-items: center;
+    }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(59,130,246,0.10); border: 1px solid rgba(59,130,246,0.25);
+      color: var(--accent-blue); border-radius: 8px;
+      padding: 7px 14px; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: background 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .dl-btn:hover { background: rgba(59,130,246,0.20); }
+    .dl-btn.purple {
+      background: rgba(139,92,246,0.10); border-color: rgba(139,92,246,0.25); color: var(--accent-purple);
+    }
+    .dl-btn.purple:hover { background: rgba(139,92,246,0.20); }
   </style>
 </head>
 <body>
+
+<!-- ═══════ LIVE STATUS BAR ═══════ -->
+<div id="live-status-bar">
+  <div id="live-dot"></div>
+  <span id="live-status-indicator">Live: initialising...</span>
+  <button id="refresh-toggle" onclick="toggleRefresh()">⏸ Pause</button>
+  <span style="margin-left:auto; font-size:0.68rem; color:var(--text-muted)">
+    Polls <code>outputs/processed_data.json</code> every 5s — requires HTTP serving
+  </span>
+</div>
+<div id="live-warning"></div>
 
 <!-- ═══════ HEADER ═══════ -->
 <header>
@@ -642,6 +762,21 @@
 
 <!-- ═══════ MAIN ═══════ -->
 <main>
+
+  <!-- Tab Navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tab-findings" onclick="showTab('findings')">🔍 Findings &amp; Analysis</button>
+    <button class="tab-btn" id="tab-evaluation" onclick="showTab('evaluation')">📊 Detection Evaluation</button>
+  </div>
+
+  <!-- Download Bar -->
+  <div class="download-bar">
+    <button class="dl-btn purple" onclick="downloadNavigatorLayer()">⬇ Download ATT&amp;CK Layer</button>
+    <button class="dl-btn" onclick="downloadFindingsCsv()">⬇ Download Findings CSV</button>
+  </div>
+
+  <!-- ── FINDINGS TAB ── -->
+  <div class="tab-panel active" id="panel-findings">
 
   <!-- Disclosure Banner -->
   <div class="disclosure-banner" id="disclosure">
@@ -1080,6 +1215,30 @@
     </div>
   </div>
 
+  </div><!-- /panel-findings -->
+
+  <!-- ── EVALUATION TAB ── -->
+  <div class="tab-panel" id="panel-evaluation">
+    <div class="eval-limitation-box">
+      <h4>⚠️ Evaluation Limitations — Read Before Interpreting Results</h4>
+      <ul id="eval-limitations-list">
+        <li>Only six small EVTX samples are included — not a representative benchmark.</li>
+        <li>No benign baseline is available; all samples are attack-focused.</li>
+        <li>Results do not establish production detection performance.</li>
+        <li>Alert-to-sample attribution is inferred from hostname patterns (no source-file field in CSV).</li>
+        <li>Possible noise counts are not verified false positives.</li>
+        <li>The evaluation does not constitute precision, recall, or F1 scores.</li>
+        <li>Multiple EVTX files may share the same hostname (IEWIN7), making per-file attribution uncertain.</li>
+      </ul>
+    </div>
+    <div id="eval-meta-bar" style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:18px; font-family:'JetBrains Mono',monospace;">
+      Loading evaluation data…
+    </div>
+    <div class="eval-sample-grid" id="eval-sample-grid">
+      <!-- populated by loadEvaluation() -->
+    </div>
+  </div><!-- /panel-evaluation -->
+
 </main>
 
 <!-- ═══════ FOOTER ═══════ -->
@@ -1093,6 +1252,321 @@
     <span style="color: var(--text-muted);">Academic project — all findings are evidence-labeled with explicit confidence and limitation statements.</span>
   </p>
 </footer>
+
+<!-- ═══════ DASHBOARD JAVASCRIPT ═══════ -->
+<script>
+/* ── Tab switching ─────────────────────────────────────────────── */
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  const btn   = document.getElementById('tab-' + name);
+  if (panel) panel.classList.add('active');
+  if (btn)   btn.classList.add('active');
+  if (name === 'evaluation') loadEvaluation();
+}
+
+/* ── Live Refresh (Part B) ─────────────────────────────────────── */
+var _lastRunTimestamp = null;  // track last successfully rendered data
+var _refreshPaused    = false;
+var _pollTimer        = null;
+var _snapshotTime     = null;  // time of last successful fetch
+
+function formatTime(d) {
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+function setLiveStatus(msg, state) {
+  // state: 'live' | 'paused' | 'error' | 'stale'
+  var dot = document.getElementById('live-dot');
+  var ind = document.getElementById('live-status-indicator');
+  if (!dot || !ind) return;
+  dot.className = '';
+  if (state === 'paused') dot.classList.add('paused');
+  else if (state === 'error' || state === 'stale') dot.classList.add('error');
+  ind.textContent = msg;
+}
+
+function showWarning(msg) {
+  var w = document.getElementById('live-warning');
+  if (!w) return;
+  w.style.display = 'block';
+  w.textContent = msg;
+}
+
+function clearWarning() {
+  var w = document.getElementById('live-warning');
+  if (w) { w.style.display = 'none'; w.textContent = ''; }
+}
+
+function pollData() {
+  if (_refreshPaused) return;
+
+  // Detect file:// protocol — live fetch not possible
+  if (location.protocol === 'file:') {
+    setLiveStatus('⚠ file:// mode — live refresh requires HTTP serving', 'stale');
+    showWarning(
+      'Dashboard is showing embedded snapshot data. ' +
+      'Live refresh requires HTTP: python -m http.server 8080 (then open http://localhost:8080/src/summary.html)'
+    );
+    stopPolling();
+    return;
+  }
+
+  fetch('../outputs/processed_data.json?_=' + Date.now())
+    .then(function(resp) {
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      return resp.json();
+    })
+    .then(function(data) {
+      // Validate structure
+      if (!data || !data.metadata) throw new Error('Missing metadata in JSON');
+      var newTs = data.metadata.run_timestamp || data.metadata.generated_at || null;
+
+      // Only re-render if timestamp changed
+      if (newTs && newTs === _lastRunTimestamp) {
+        // No change — just update indicator time
+        _snapshotTime = new Date();
+        setLiveStatus('Live: last updated ' + formatTime(_snapshotTime), 'live');
+        return;
+      }
+
+      // New data — update tracked timestamp
+      _lastRunTimestamp = newTs;
+      _snapshotTime = new Date();
+      clearWarning();
+      setLiveStatus('Live: last updated ' + formatTime(_snapshotTime), 'live');
+
+      // Update stat cards if possible
+      var meta = data.metadata || {};
+      _updateStatIfEl('stat-total-detections', meta.total_detections);
+      var fc = (data.findings || []).length;
+      _updateStatIfEl('stat-finding-count', fc);
+    })
+    .catch(function(err) {
+      // Fetch failure or malformed JSON
+      var w = 'Live refresh failed: ' + err.message + '. Showing existing data.';
+      if (_snapshotTime) {
+        w += ' (last updated ' + formatTime(_snapshotTime) + ')';
+      }
+      showWarning(w);
+      setLiveStatus('⚠ Refresh failed — showing existing data', 'error');
+    });
+}
+
+function _updateStatIfEl(id, val) {
+  var el = document.getElementById(id);
+  if (el && val !== undefined && val !== null) el.textContent = val;
+}
+
+function startPolling() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  pollData(); // immediate first poll
+  _pollTimer = setInterval(pollData, 5000);
+}
+
+function stopPolling() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+function toggleRefresh() {
+  var btn = document.getElementById('refresh-toggle');
+  _refreshPaused = !_refreshPaused;
+  if (_refreshPaused) {
+    stopPolling();
+    if (btn) btn.textContent = '▶ Resume';
+    setLiveStatus('Paused — data display frozen', 'paused');
+  } else {
+    if (btn) btn.textContent = '⏸ Pause';
+    startPolling();
+  }
+}
+
+/* ── Evaluation Tab (Part A) ───────────────────────────────────── */
+var _evalLoaded = false;
+
+function loadEvaluation() {
+  if (_evalLoaded) return;
+
+  if (location.protocol === 'file:') {
+    // file:// mode — use embedded snapshot
+    renderEvaluation(EVAL_SNAPSHOT);
+    return;
+  }
+
+  fetch('../outputs/evaluation.json?_=' + Date.now())
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      if (!data || !data.samples) throw new Error('Missing samples key');
+      renderEvaluation(data);
+      _evalLoaded = true;
+    })
+    .catch(function(err) {
+      // Fall back to embedded snapshot
+      if (EVAL_SNAPSHOT) {
+        renderEvaluation(EVAL_SNAPSHOT);
+        var bar = document.getElementById('eval-meta-bar');
+        if (bar) bar.textContent += ' [live fetch failed: ' + err.message + ' — showing embedded snapshot]';
+      } else {
+        var g = document.getElementById('eval-sample-grid');
+        if (g) g.innerHTML = '<p style="color:#ef4444">Could not load evaluation data: ' + err.message + '</p>';
+      }
+    });
+}
+
+function renderEvaluation(data) {
+  if (!data) return;
+  var meta = data.metadata || {};
+  var bar = document.getElementById('eval-meta-bar');
+  if (bar) {
+    var pt = meta.processing_time_seconds !== null && meta.processing_time_seconds !== undefined
+      ? meta.processing_time_seconds + 's' : 'unavailable';
+    bar.innerHTML =
+      'Samples: <strong>' + (meta.total_samples || 6) + '</strong> &nbsp;|&nbsp; ' +
+      'Hits: <strong>' + (meta.samples_with_relevant_alerts || '—') + '</strong> &nbsp;|&nbsp; ' +
+      'Missed: <strong>' + (meta.samples_missed || 0) + '</strong> &nbsp;|&nbsp; ' +
+      'Uncertain: <strong>' + (meta.samples_uncertain || 0) + '</strong> &nbsp;|&nbsp; ' +
+      'Hayabusa processing time: <strong>' + pt + '</strong> &nbsp;|&nbsp; ' +
+      'Generated: ' + (meta.generated_at || 'embedded snapshot');
+  }
+
+  // Update limitations list if JSON has different ones
+  if (data.limitations && data.limitations.length) {
+    var ul = document.getElementById('eval-limitations-list');
+    if (ul) {
+      ul.innerHTML = data.limitations.map(function(l) {
+        return '<li>' + _esc(l) + '</li>';
+      }).join('');
+    }
+  }
+
+  // Render sample cards
+  var grid = document.getElementById('eval-sample-grid');
+  if (!grid || !data.samples) return;
+  grid.innerHTML = data.samples.map(function(s) {
+    var statusCls = s.status === 'hit' ? 'hit' : s.status === 'miss' ? 'miss' : 'uncertain';
+    var statusLabel = s.status.charAt(0).toUpperCase() + s.status.slice(1);
+    var titles = (s.matching_alert_titles || []).slice(0, 4);
+    var tids   = (s.matched_technique_ids || []);
+    return '<div class="eval-sample-card ' + statusCls + '">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+        '<code style="font-size:0.72rem;color:var(--text-secondary)">' + _esc(s.filename) + '</code>' +
+        '<span class="eval-status-badge ' + statusCls + '">' + statusLabel + '</span>' +
+      '</div>' +
+      '<div style="font-size:0.8rem;color:var(--text-primary);margin-bottom:8px">' + _esc(s.expected_behavior) + '</div>' +
+      (tids.length ? '<div style="font-size:0.72rem;color:var(--accent-cyan);margin-bottom:6px">Matched: ' + tids.join(', ') + '</div>' : '') +
+      (titles.length ? '<div style="font-size:0.72rem;color:var(--text-secondary)">Rules: ' + titles.map(_esc).join(' · ') + '</div>' : '') +
+      '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:8px;font-style:italic">' +
+        'Noise alerts: ' + (s.possible_noise_alert_count || 0) +
+        ' — ' + _esc((s.attribution_note || '').slice(0, 120)) +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function _esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Embedded Evaluation Snapshot (Part A) ─────────────────────── */
+// This snapshot is generated from outputs/evaluation.json at build time.
+// It allows file:// access and serves as the fallback for failed HTTP fetches.
+// Provenance: outputs/evaluation.json — generated by scripts/evaluate_detection.py
+var EVAL_SNAPSHOT = null; // populated below by inline fetch attempt or left as null for file:// fallback
+
+// Try to pre-populate the snapshot on load (HTTP only)
+(function() {
+  if (location.protocol !== 'file:') {
+    fetch('../outputs/evaluation.json?_=' + Date.now())
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ if(d) EVAL_SNAPSHOT = d; })
+      .catch(function(){});
+  }
+})();
+
+/* ── Navigator Layer Download (Part D) ────────────────────────── */
+function downloadNavigatorLayer() {
+  var url = '../outputs/attack_navigator_layer.json';
+  if (location.protocol === 'file:') {
+    alert('Download requires HTTP serving.\nFile location: outputs/attack_navigator_layer.json\nServe with: python -m http.server 8080');
+    return;
+  }
+  fetch(url + '?_=' + Date.now())
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(layer) {
+      // Validate before download
+      if (!layer || !layer.techniques || !layer.domain) throw new Error('Invalid layer structure');
+      var blob = new Blob([JSON.stringify(layer, null, 2)], {type: 'application/json'});
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'hayabusa_attack_navigator_layer.json';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(function(err) {
+      alert('Could not download Navigator layer: ' + err.message + '\nCheck that outputs/attack_navigator_layer.json exists.');
+    });
+}
+
+/* ── Findings CSV Download (Part D) ───────────────────────────── */
+var FINDINGS_CONTRACT_HEADERS = [
+  'finding_id','timestamp','timezone','alert_name','severity','status',
+  'confidence','host','event_id','channel','record_id','rule_id',
+  'evidence_reference','details','interpretation','benign_explanation',
+  'limitation','next_step','techniques'
+];
+
+function csvEscape(val) {
+  var s = String(val === null || val === undefined ? '' : val);
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function downloadFindingsCsv() {
+  // Prefer live-fetched data; fall back to scraping visible page data
+  if (location.protocol === 'file:') {
+    alert('CSV download requires HTTP serving.\nFile location: outputs/findings.csv\nServe with: python -m http.server 8080');
+    return;
+  }
+  fetch('../outputs/processed_data.json?_=' + Date.now())
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      var findings = (data && data.findings) ? data.findings : [];
+      if (!findings.length) throw new Error('No findings in loaded data');
+      var lines = [FINDINGS_CONTRACT_HEADERS.join(',')];
+      findings.forEach(function(f) {
+        lines.push(FINDINGS_CONTRACT_HEADERS.map(function(h) {
+          return csvEscape(f[h] !== undefined ? f[h] : '');
+        }).join(','));
+      });
+      var blob = new Blob([lines.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'hayabusa_findings_' + new Date().toISOString().slice(0,10) + '.csv';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(function(err) {
+      alert('Could not generate findings CSV: ' + err.message);
+    });
+}
+
+/* ── Initialise on page load ───────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', function() {
+  startPolling();
+});
+</script>
 
 </body>
 </html>
