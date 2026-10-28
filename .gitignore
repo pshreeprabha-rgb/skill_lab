@@ -3,6 +3,8 @@
 data/*
 !data/sample/
 !data/README.md
+!data/ground_truth.csv
+!data/dataset_inventory.csv
 
 # Python / virtual environments
 __pycache__/
@@ -15,3 +17,12 @@ venv/
 Thumbs.db
 .vscode/
 .idea/
+
+# Secrets — never commit real keys
+.env
+*.key
+*.pem
+
+# AI report outputs — may contain sensitive analysis; review before committing
+report/ai_summary.md
+report/ai_summary.REJECTED.md
