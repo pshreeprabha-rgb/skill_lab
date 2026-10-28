@@ -1,0 +1,107 @@
+{
+  "name": "Windows Threat Hunting - Hayabusa Findings",
+  "versions": {
+    "attack": "14",
+    "navigator": "4.9",
+    "layer": "4.5"
+  },
+  "domain": "enterprise-attack",
+  "description": "MITRE ATT&CK layer derived from Hayabusa-based threat hunting findings. Generated from outputs/attack_mapping.csv. Only techniques actually mapped in this project are included. Technique colors reflect analyst confidence (red=high, orange=medium, yellow=low).",
+  "filters": {
+    "platforms": [
+      "Windows"
+    ]
+  },
+  "sorting": 0,
+  "layout": {
+    "layout": "side",
+    "aggregateFunction": "average",
+    "showID": false,
+    "showName": true,
+    "showAggregateScores": false,
+    "countUnscored": false,
+    "expandedSubtechniques": "none"
+  },
+  "hideDisabled": false,
+  "techniques": [
+    {
+      "techniqueID": "T1003",
+      "tactic": "credential-access",
+      "color": "#ff6666",
+      "comment": "Finding IDs: F-06",
+      "enabled": true,
+      "metadata": [
+        {
+          "name": "finding_ids",
+          "value": "F-06"
+        },
+        {
+          "name": "source",
+          "value": "outputs/attack_mapping.csv"
+        }
+      ],
+      "links": [],
+      "showSubtechniques": false
+    },
+    {
+      "techniqueID": "T1086",
+      "tactic": "execution",
+      "color": "#ff6666",
+      "comment": "Finding IDs: F-05",
+      "enabled": true,
+      "metadata": [
+        {
+          "name": "finding_ids",
+          "value": "F-05"
+        },
+        {
+          "name": "source",
+          "value": "outputs/attack_mapping.csv"
+        }
+      ],
+      "links": [],
+      "showSubtechniques": false
+    }
+  ],
+  "gradient": {
+    "colors": [
+      "#ffffff",
+      "#ff6666"
+    ],
+    "minValue": 0,
+    "maxValue": 1
+  },
+  "legendItems": [
+    {
+      "label": "High confidence finding",
+      "color": "#ff6666"
+    },
+    {
+      "label": "Medium confidence finding",
+      "color": "#ff9966"
+    },
+    {
+      "label": "Low confidence finding",
+      "color": "#ffcc66"
+    }
+  ],
+  "metadata": [
+    {
+      "name": "project",
+      "value": "Windows Threat Hunting System Using Hayabusa"
+    },
+    {
+      "name": "source_file",
+      "value": "outputs/attack_mapping.csv"
+    },
+    {
+      "name": "layer_format_reference",
+      "value": "https://github.com/mitre-attack/attack-navigator (verified 2026-10-28)"
+    }
+  ],
+  "links": [],
+  "showTacticRowBackground": false,
+  "tacticRowBackground": "#dddddd",
+  "selectTechniquesAcrossTactics": false,
+  "selectSubtechniquesWithParent": false
+}
