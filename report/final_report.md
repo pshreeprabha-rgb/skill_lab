@@ -362,3 +362,115 @@ All findings are documented with explicit confidence labels, evidence references
 *Reviewed by: Member 1 (Project Lead)*  
 *QA checked by: Member 5 (Reporting & QA Owner)*  
 *Dataset authorization: Public domain EVTX samples — see `data/README.md`*
+
+---
+
+## Appendix A: feat-improvements Additions (Branch: feat-improvements)
+
+> This appendix documents all additions made in the `feat-improvements` branch. The sections below supplement but do not replace the main report findings (F-01 to F-08).
+
+### A.1 Corrections to Original Report
+
+The following values in the original report have been corrected based on the actual implementation:
+
+| Original Claim | Correct Value | Notes |
+|---|---|---|
+| Tool: Hayabusa v2.18.0 | Hayabusa v4.2.0 | Version confirmed from hayabusa_run_log.txt |
+| 3 EVTX files | 6 EVTX files | Full ground truth covers all 6 samples |
+| 4 findings | 8 findings (F-01 to F-08) | Full findings.csv has 8 rows |
+| 4 ATT&CK techniques | 2 technique mappings (T1003, T1086) | attack_mapping.csv has 2 rows |
+| csv-timeline subcommand | csv-timeline (confirmed) | Subcommand syntax confirmed from run log |
+
+### A.2 Detection Evaluation (Part A)
+
+**Methodology:**  
+A six-row ground truth dataset (`data/ground_truth.csv`) was created from the project's EVTX sample descriptions and available event evidence. The evaluation script (`scripts/evaluate_detection.py`) compares expected behaviors and technique IDs against:
+1. Hayabusa alerts in `outputs/raw/hayabusa_real_output.csv` (94 rows)
+2. ATT&CK mappings in `outputs/attack_mapping.csv`
+
+Matching uses technique ID comparison and keyword heuristics on alert rule titles. This is not a precision/recall benchmark.
+
+**Results:**
+
+| Sample | Expected Behavior | Status | Matching Alerts |
+|---|---|---|---|
+| babyshark_sample | Credential dumping via LSASS | HIT | Password Dumper Remote Thread in LSASS |
+| CA_sysmon_sample | Privilege escalation via MSI | HIT | Always Install Elevated MSI Spawned Cmd And Powershell |
+| Exec_sysmon_sample | Process execution via Sysmon | HIT | Proc Exec rules |
+| sysmon_10_11 | LSASS memory access / dump file | HIT | DMP/HDMP File Creation, LSASS Memory Access |
+| sysmon_local_account | Registry modification | HIT | Reg Key Create/Delete, Reg Key Value Set |
+| temp_scheduled_task | Scheduled task creation/deletion | HIT | Scheduled Task Deletion, Task Created |
+
+**Summary:** 6/6 samples scored as HIT. Processing time: 5.404 seconds (from Hayabusa run log).
+
+**Limitations:**
+1. Six small samples do not constitute a representative benchmark.
+2. No benign baseline is available -- false positive rate cannot be calculated.
+3. Host attribution is based on hostname patterns in the real output CSV and may miss alerts from differently named hosts.
+4. Matching uses heuristics, not verified event-level correlation.
+5. The evaluation does not claim precision, recall, or accuracy -- only alert presence.
+
+### A.3 Dashboard Enhancements (Part B)
+
+The interactive dashboard (`src/summary.html`) was enhanced with:
+
+- **Live status bar**: Shows last-fetched time and a green/red indicator.
+- **Polling**: Fetches `outputs/processed_data.json` every 30 seconds via the Fetch API.
+- **Pause/Resume**: Button to stop/start polling without reloading.
+- **Stale data warning**: Orange banner if data is more than 5 minutes old.
+- **Tab navigation**: Findings tab (default) and Evaluation tab.
+- **Evaluation tab**: Renders per-sample evaluation results from `outputs/evaluation.json`.
+- **Download buttons**: ATT&CK Navigator layer (JSON) and Findings CSV.
+- **Snapshot fallback**: Embeds a data snapshot used when the dashboard is opened as a `file://` URL.
+
+**Serving the dashboard over HTTP:**
+```powershell
+python -m http.server 8080 --directory .
+# Open: http://localhost:8080/src/summary.html
+```
+
+**Browser test status:** NOT TESTED -- ChromeDriver not installed. Selenium tests are present in `tests/test_dashboard_refresh.py` but are marked as skipped.
+
+### A.4 ATT&CK Navigator Layer Export (Part D)
+
+The script `scripts/export_navigator_layer.py` produces `outputs/attack_navigator_layer.json`, a valid ATT&CK Navigator v4.9 / layer v4.5 file.
+
+- **Techniques included:** T1003.001 (LSASS Memory), T1086 (PowerShell -- legacy ID)
+- **Color coding:** Red for high confidence, orange for medium, yellow for low
+- **Import URL:** https://mitre-attack.github.io/attack-navigator/
+
+The layer file is also downloadable directly from the dashboard's Download bar.
+
+### A.5 Optional AI Report Draft (Part C)
+
+The script `scripts/generate_ai_report.py` generates a Hayabusa findings summary using the Gemini API. It requires `GEMINI_API_KEY` to be set in `.env` (template: `.env.example`).
+
+**Validation checks performed before saving:**
+- `validate_finding_refs()`: Rejects invented finding IDs not in findings.csv
+- `validate_technique_ids()`: Rejects ATT&CK IDs not in attack_mapping.csv
+- `validate_numeric_claims()`: Flags inflated finding/technique counts
+- `validate_status_labels()`: Flags overstatement of candidate findings as confirmed
+
+**Live API status:** NOT TESTED in this environment (GEMINI_API_KEY not configured).
+
+### A.6 Report Deliverables (Part F)
+
+**PowerPoint Presentation:**
+- Script: `scripts/generate_presentation.py`
+- Output: `report/presentation.pptx` (6 slides, DRAFT -- requires human editing)
+- Slides: Title, Executive Summary, Key Findings, Attack Timeline, ATT&CK Mapping, Limitations & Next Steps
+
+**PDF Export:** BLOCKED
+- `pandoc` is not installed on this system.
+- `weasyprint` is not installed on this system.
+- Manual steps: Install pandoc (`winget install pandoc`) then run `pandoc report/final_report.md -o report/final_report.pdf`
+
+### A.7 Validation & Testing (Summary)
+
+| Component | Command | Result |
+|---|---|---|
+| Validation checks | `python scripts/validate_outputs.py` | 27/27 PASS |
+| Unit tests | `python -m unittest discover -s tests -v` | 111 tests, OK (16 skipped) |
+| Detection evaluation | `python scripts/evaluate_detection.py` | 6/6 hits |
+| Navigator layer | `python scripts/export_navigator_layer.py` | 2 techniques, valid JSON |
+| PowerPoint | `python scripts/generate_presentation.py` | 6 slides generated |

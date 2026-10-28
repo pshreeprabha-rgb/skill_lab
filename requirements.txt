@@ -5,5 +5,18 @@
 # Core data processing (all should already be available)
 # csv, json, os, sys, pathlib - standard library
 
-# Optional: for enhanced CSV processing
-# (not required - script works with stdlib only)
+# Optional: AI report generation
+# Requires GEMINI_API_KEY to be set in .env (see .env.example)
+# google-generativeai>=0.8.0
+
+# Optional: PowerPoint presentation generation
+# python-pptx>=1.0.0
+
+# Optional: Selenium browser testing (NOT TESTED - ChromeDriver also required)
+# Install ChromeDriver: https://chromedriver.chromium.org/downloads
+# selenium>=4.0.0
+# webdriver-manager>=4.0.0
+
+# Optional: PDF report generation (BLOCKED - not available in current environment)
+# Option A: Install pandoc from https://pandoc.org/installing.html
+# Option B: pip install weasyprint
